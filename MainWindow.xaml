@@ -1,0 +1,163 @@
+<Window x:Class="VisionWorkbenchLicenseIssuer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="VisionWorkbench 许可证发放工具" Width="720" Height="510"
+        MinWidth="620" MinHeight="430" WindowStartupLocation="CenterScreen">
+    <Window.Icon>
+        <BitmapImage UriSource="/Assets/license-issuer-logo.png" />
+    </Window.Icon>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0" Margin="0,0,0,24">
+            <StackPanel Orientation="Horizontal">
+                <Image Source="/Assets/license-issuer-logo.png" Width="44" Height="44"
+                       Stretch="Uniform" Margin="0,0,12,0" />
+                <StackPanel>
+                <TextBlock Text="许可证发放工具" FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="独立离线签发 VisionWorkbench 授权文件；私钥只保存在本工具或指定的安全位置。"
+                           Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" />
+                </StackPanel>
+            </StackPanel>
+            <Button DockPanel.Dock="Right" Content="生成新密钥" Click="GenerateKey_Click" Visibility="Collapsed" />
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <GroupBox Header="签发密钥" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="145" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="私钥 PEM 文件" Grid.Row="0" />
+                        <TextBox x:Name="PrivateKeyPathText" Grid.Row="0" Grid.Column="1" />
+                        <Button Content="选择" Grid.Row="0" Grid.Column="2" Click="ChoosePrivateKey_Click" />
+                        <TextBlock Text="客户端公钥（Base64）" Grid.Row="1" />
+                        <TextBox x:Name="PublicKeyText" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                 IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxHeight="58" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                                   Text="请将公钥配置到主程序的 LicensePublicKey；私钥不要复制到主程序。"
+                                   Foreground="{DynamicResource MutedTextBrush}" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="客户申请码">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="145" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="申请码" VerticalAlignment="Top" />
+                        <TextBox x:Name="ActivationRequestText" Grid.Column="1" Height="76"
+                                 AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                        <Button Content="解析申请码" Grid.Column="2" Click="ParseRequest_Click" VerticalAlignment="Top" Visibility="Collapsed" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="许可证内容" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="145" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="145" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="客户名称" Grid.Row="0" />
+                        <TextBox x:Name="CustomerText" Grid.Row="0" Grid.Column="1" />
+                        <TextBlock Text="产品" Grid.Row="0" Grid.Column="2" />
+                        <TextBox x:Name="ProductText" Grid.Row="0" Grid.Column="3" Text="VisionWorkbench" IsReadOnly="True" />
+                        <TextBlock Text="版本/Edition" Grid.Row="1" />
+                        <TextBox x:Name="EditionText" Grid.Row="1" Grid.Column="1" Text="Professional" />
+                        <TextBlock Text="许可证编号" Grid.Row="1" Grid.Column="2" />
+                        <TextBox x:Name="LicenseIdText" Grid.Row="1" Grid.Column="3" />
+                        <TextBlock Text="生效日期" Grid.Row="2" />
+                        <DatePicker x:Name="NotBeforePicker" Grid.Row="2" Grid.Column="1" Margin="0,3,0,3" />
+                        <TextBlock Text="到期日期" Grid.Row="2" Grid.Column="2" />
+                        <DatePicker x:Name="ExpiresPicker" Grid.Row="2" Grid.Column="3" Margin="0,3,0,3" />
+                        <TextBlock Text="设备码" Grid.Row="3" />
+                        <TextBox x:Name="MachineFingerprintText" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                                 IsReadOnly="True" />
+                        <TextBlock Text="功能列表" Grid.Row="4" />
+                        <TextBox x:Name="FeaturesText" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                                 Text="detection,segmentation,semantic-segmentation,instance-segmentation,pose,behavior" />
+                        <TextBlock Text="数量限制" Grid.Row="5" />
+                        <TextBox x:Name="LimitsText" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3"
+                                 ToolTip="格式：key=value;key=value；留空表示不限制" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="输出文件" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="145" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="许可证文件" />
+                        <TextBox x:Name="OutputPathText" Grid.Column="1" />
+                        <Button Content="选择保存位置" Grid.Column="2" Click="ChooseOutput_Click" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="许可证有效期" Margin="0,18,0,0">
+                    <Grid Margin="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="有效期：" VerticalAlignment="Center" />
+                        <ComboBox x:Name="ValidityCombo" Grid.Column="1" SelectedIndex="3"
+                                  HorizontalContentAlignment="Center">
+                            <ComboBoxItem Content="一天" Tag="day" />
+                            <ComboBoxItem Content="一周" Tag="week" />
+                            <ComboBoxItem Content="一月" Tag="month" />
+                            <ComboBoxItem Content="一年" Tag="year" />
+                            <ComboBoxItem Content="三年" Tag="three-years" />
+                            <ComboBoxItem Content="十年" Tag="ten-years" />
+                            <ComboBoxItem Content="永久" Tag="permanent" />
+                        </ComboBox>
+                        <TextBlock Grid.Column="2" Text="许可证将绑定客户申请码中的设备。"
+                                   Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"
+                                   Margin="14,0,0,0" />
+                    </Grid>
+                </GroupBox>
+
+                <Border Margin="0,14,0,0" Padding="10,8"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4">
+                    <TextBlock x:Name="StatusText" Foreground="{DynamicResource MutedTextBrush}"
+                               TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Button Content="生成许可证" FontWeight="Bold"
+                    HorizontalAlignment="Right"
+                    MinWidth="190" Padding="26,9" Click="Generate_Click" />
+        </Grid>
+        <Border x:Name="ToastBorder" Grid.Row="0" Grid.RowSpan="3"
+                Visibility="Collapsed" Panel.ZIndex="100" IsHitTestVisible="False"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,76"
+                Background="{DynamicResource AccentBrush}" CornerRadius="6" Padding="22,11">
+            <TextBlock x:Name="ToastText" Foreground="White" FontWeight="SemiBold" />
+        </Border>
+    </Grid>
+</Window>
