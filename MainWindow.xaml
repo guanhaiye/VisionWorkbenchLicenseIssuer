@@ -115,6 +115,25 @@
                     </Grid>
                 </GroupBox>
 
+                <GroupBox Header="授权模块（数据与模型）" Margin="0,18,0,0">
+                    <StackPanel Margin="4">
+                        <CheckBox x:Name="AllModulesCheck" Content="全部模块" IsChecked="True"
+                                  FontWeight="SemiBold" Checked="AllModulesCheck_Changed" Unchecked="AllModulesCheck_Changed" />
+                        <WrapPanel Margin="0,8,0,0">
+                            <CheckBox x:Name="DetectionModuleCheck" Content="AI 目标检测" Tag="data-model.detection" Margin="0,0,18,6" />
+                            <CheckBox x:Name="SemanticSegmentationModuleCheck" Content="AI 语义分割" Tag="data-model.semantic-segmentation" Margin="0,0,18,6" />
+                            <CheckBox x:Name="InstanceSegmentationModuleCheck" Content="AI 实例分割" Tag="data-model.instance-segmentation" Margin="0,0,18,6" />
+                            <CheckBox x:Name="PoseModuleCheck" Content="AI 关键点检测" Tag="data-model.pose" Margin="0,0,18,6" />
+                            <CheckBox x:Name="BehaviorModuleCheck" Content="AI 行为识别" Tag="data-model.behavior" Margin="0,0,18,6" />
+                            <CheckBox x:Name="AiTextModuleCheck" Content="AI 字符识别" Tag="data-model.ai-text" Margin="0,0,18,6" />
+                            <CheckBox x:Name="BarcodeModuleCheck" Content="AI 条码识别" Tag="data-model.barcode" Margin="0,0,18,6" />
+                            <CheckBox x:Name="QrCodeModuleCheck" Content="AI 二维码识别" Tag="data-model.qrcode" Margin="0,0,18,6" />
+                        </WrapPanel>
+                        <TextBlock Text="选择全部后，激活软件可使用全部数据与模型模块；取消全部可按模块授权。"
+                                   Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" />
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="许可证有效期" Margin="0,18,0,0">
                     <Grid Margin="4">
                         <Grid.ColumnDefinitions>

@@ -20,6 +20,7 @@ public partial class MainWindow : Window
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
     private readonly DispatcherTimer _toastTimer;
+    private bool _syncingModuleChecks;
     private readonly string _issuerDataDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "VisionWorkbenchLicenseIssuer");
@@ -33,7 +34,57 @@ public partial class MainWindow : Window
             _toastTimer.Stop();
             ToastBorder.Visibility = Visibility.Collapsed;
         };
+        foreach (var checkBox in ModuleChecks())
+        {
+            checkBox.Checked += ModuleCheck_Changed;
+            checkBox.Unchecked += ModuleCheck_Changed;
+        }
         StatusText.Text = "粘贴客户申请码，选择有效期后点击“生成许可证并复制”。";
+    }
+
+    private CheckBox[] ModuleChecks() =>
+    [
+        DetectionModuleCheck, SemanticSegmentationModuleCheck, InstanceSegmentationModuleCheck,
+        PoseModuleCheck, BehaviorModuleCheck, AiTextModuleCheck, BarcodeModuleCheck, QrCodeModuleCheck,
+    ];
+
+    private void AllModulesCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingModuleChecks || AllModulesCheck is null || ModuleChecks().Any(checkBox => checkBox is null)) return;
+        _syncingModuleChecks = true;
+        try
+        {
+            foreach (var checkBox in ModuleChecks()) checkBox.IsChecked = AllModulesCheck.IsChecked == true;
+        }
+        finally
+        {
+            _syncingModuleChecks = false;
+        }
+    }
+
+    private void ModuleCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingModuleChecks || AllModulesCheck is null || ModuleChecks().Any(checkBox => checkBox is null)) return;
+        _syncingModuleChecks = true;
+        try
+        {
+            AllModulesCheck.IsChecked = ModuleChecks().All(checkBox => checkBox.IsChecked == true);
+        }
+        finally
+        {
+            _syncingModuleChecks = false;
+        }
+    }
+
+    private string[] SelectedModuleIds()
+    {
+        if (AllModulesCheck.IsChecked == true) return ["module.all"];
+        return ModuleChecks()
+            .Where(checkBox => checkBox.IsChecked == true)
+            .Select(checkBox => checkBox.Tag?.ToString())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Cast<string>()
+            .ToArray();
     }
 
     private void Generate_Click(object sender, RoutedEventArgs e)
@@ -43,6 +94,7 @@ public partial class MainWindow : Window
             var request = ParseRequest(ActivationRequestText.Text);
             var validity = (ValidityCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "year";
             var now = DateTime.UtcNow;
+            var modules = SelectedModuleIds();
             var payload = new LicensePayload(
                 $"LIC-{now:yyyyMMdd-HHmmss}-{RandomNumberGenerator.GetInt32(100000, 999999)}",
                 "客户",
@@ -51,7 +103,8 @@ public partial class MainWindow : Window
                 now,
                 CalculateExpiry(now, validity),
                 request.MachineFingerprint,
-                ["detection", "segmentation", "semantic-segmentation", "instance-segmentation", "pose", "behavior"]);
+                modules,
+                Modules: modules);
 
             Directory.CreateDirectory(_issuerDataDirectory);
             var privateKeyPath = Path.Combine(_issuerDataDirectory, "license-signing-private.pem");
@@ -223,7 +276,8 @@ public partial class MainWindow : Window
             var expires = ToUtc(ExpiresPicker.SelectedDate, "请选择到期日期");
             if (expires <= notBefore) throw new InvalidDataException("到期日期必须晚于生效日期");
             var outputPath = Require(OutputPathText.Text, "请选择输出文件");
-            var features = FeaturesText.Text.Split([',', '，', ';', '；', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var modules = SelectedModuleIds();
+            var features = modules;
             var limits = ParseLimits(LimitsText.Text);
 
             using var ecdsa = ECDsa.Create();
@@ -237,7 +291,8 @@ public partial class MainWindow : Window
                 expires,
                 fingerprint.Trim(),
                 features,
-                limits.Count == 0 ? null : limits);
+                limits.Count == 0 ? null : limits,
+                modules);
             var payloadJson = JsonSerializer.Serialize(payload, JsonOptions);
             var document = new LicenseDocument(
                 payload,
@@ -289,7 +344,8 @@ public partial class MainWindow : Window
         DateTime ExpiresAtUtc,
         string MachineFingerprint,
         IReadOnlyList<string> Features,
-        IReadOnlyDictionary<string, int>? Limits = null);
+        IReadOnlyDictionary<string, int>? Limits = null,
+        IReadOnlyList<string>? Modules = null);
 
     private sealed record LicenseDocument(
         LicensePayload Payload,
